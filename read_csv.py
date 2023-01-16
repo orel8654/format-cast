@@ -1,7 +1,7 @@
 import pandas
 import csv
 
-class Reader:
+class Format_CSV:
     def __init__(self, file_path : str, step=None):
         self.file_path = file_path
         self.step = step
@@ -37,14 +37,22 @@ class Reader:
     def write_csv(self, path : str):
         if self.step is None:
             file_name = 'ozon_kw_res.csv'
-            self.data_frame.to_csv(path+file_name, sep=',', index=False)
+            self.data_frame.to_csv(path+file_name, sep='\t', index=False)
         else:
             for iter in range((len(self.data_frame) // self.step) + 1):
                 file_name = f'ozon_kw_res{iter + 1}.csv'
-                self.data_frame[(self.step * ((iter+1) - 1)) if iter != 0 else 0:(self.step * (iter + 1))].to_csv(path + file_name, sep=',', index=False)
+                self.data_frame[(self.step * ((iter+1) - 1)) if iter != 0 else 0:(self.step * (iter + 1))].to_csv(path + file_name, sep='\t', index=False)
+
+class Format_CSV_Slice(Format_CSV):
+    def __init__(self, file_path : str, step : int, file_name : str):
+        super().__init__(file_path=file_path, step=step)
+        self.file_name = file_name + str(step) + '.csv'
+
+    def write_csv(self, path : str):
+        self.data_frame[0:self.step].to_csv(self.file_path + self.file_name, sep='\t', index=False)
 
 if __name__ == '__main__':
-    r = Reader('/Users/macbook/Desktop/ozon_kw.csv')
+    r = Format_CSV('/Users/macbook/Desktop/ozon_kw.csv')
     r.read_csv()
     r.delete_columns(['ii', 'searchtimes_7days'])
     r.type_casting(['sku_quantity'])
