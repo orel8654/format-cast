@@ -6,6 +6,18 @@ class Format_CSV:
         self.file_path = file_path
         self.step = step
         self.delimiter = self.find_delimiter()
+        self.replacement_dict_regex = {
+            '\\\\n': ' ',
+            '\"': ' ',
+            ';': ' ',
+            '\"\"': ' ',
+            '\\': ' ',
+            '\\\\':' ',
+        }
+        self.replacement_list = [
+            ';', '\n', '\\', '\"', '\'',
+        ]
+        self.replacement_string = '/[\.\-/\\\s]/g'
 
     def find_delimiter(self):
         sniffer = csv.Sniffer()
@@ -20,11 +32,24 @@ class Format_CSV:
         for col in cols:
             self.data_frame.drop(col, axis=1, inplace=True)
 
-    def delete_rows(self):
+    def replace_rows_list(self):
+        for el in self.replacement_list:
+            self.data_frame['keyword'] = self.data_frame['keyword'].replace(el, ' ')
+
+    def replace_rows_regex_dict(self):
+        self.data_frame['keyword'] = self.data_frame['keyword'].replace(self.replacement_dict_regex, regex=True)
+
+    def replace_rows_string(self):
+        self.data_frame['keyword'] = self.data_frame['keyword'].replace(self.replacement_string, ' ')
+
+    def strip_rows(self):
+        self.data_frame['keyword'] = self.data_frame['keyword'].str.strip()
+
+    def delete_rows_by_length(self, length : int):
         dict = self.data_frame.to_dict('records')
         indexes_removed = []
         for i in range(len(dict)):
-            if len(dict[i]['keyword']) > 256:
+            if len(dict[i]['keyword']) > length:
                 indexes_removed.append(i)
         for idx in indexes_removed:
             del dict[idx]
@@ -52,8 +77,11 @@ class Format_CSV_Slice(Format_CSV):
         self.data_frame[0:self.step].to_csv(self.file_path + self.file_name, sep='\t', index=False)
 
 if __name__ == '__main__':
-    r = Format_CSV('/Users/macbook/Desktop/ozon_kw.csv')
+    r = Format_CSV_Slice('/Users/macbook/Desktop/ozon_kw.csv', 50000, 'ozon_kw_res')
     r.read_csv()
     r.delete_columns(['ii', 'searchtimes_7days'])
+    r.replace_rows_list()
+    r.delete_rows_by_length(255)
+    r.strip_rows()
     r.type_casting(['sku_quantity'])
     r.write_csv('/Users/macbook/Desktop/')
